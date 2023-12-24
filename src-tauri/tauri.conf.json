@@ -6,12 +6,16 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "dokan-local",
+    "productName": "Dokan Local",
     "version": "0.0.0"
   },
   "tauri": {
     "allowlist": {
       "all": false,
+      "dialog": {
+        "open": true,
+        "message": true
+      },
       "shell": {
         "all": false,
         "open": true

@@ -22,12 +22,18 @@ pub struct ServiceStop {
     pub service: String,
 }
 
+fn send_log<S: serde::Serialize>(window: &Window, event: &str, payload: S) {
+    window
+        .emit_and_trigger(event, &payload)
+        .expect(&*format!("Failed to send {} log", event))
+}
+
 #[tauri::command(async)]
 pub async fn start_service(
     window: Window,
     state: tauri::State<'_, AppState>,
     root_dir: String,
-    port: usize,
+    port: u32,
     service: String,
 ) -> Result<u32, String> {
     // npx ts-node-dev --respawn --transpile-only --exit-child -r tsconfig-paths/register src/index.ts
@@ -37,31 +43,49 @@ pub async fn start_service(
     }
 
     tokio::spawn(async move {
-        let mut child = Command::new("npx")
-            .args([
-                "ts-node-dev",
-                "--respawn",
-                "--transpile-only",
-                "--exit-child",
-                "-r",
-                "tsconfig-paths/register",
-                "src/index.ts",
-            ])
-            .current_dir(format!("{}/{}", &root_dir, &service))
-            .env("APP_PORT", port.to_string())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
+        let mut child = Command::new("npx");
 
-        window
-            .emit_and_trigger(
-                "service:start",
-                ServiceStart {
+        let child = match service.as_str() {
+            "storefront" => child.args(["npx", "next", "dev", "-p", "3001"]),
+            "dashboard" => child.args(["pnpm", "dev", "--port", "3000"]),
+            _ => child
+                .args([
+                    "ts-node-dev",
+                    "--respawn",
+                    "--transpile-only",
+                    "--exit-child",
+                    "-r",
+                    "tsconfig-paths/register",
+                    "src/index.ts",
+                ])
+                .env("APP_PORT", port.to_string()),
+        }
+        .current_dir(format!("{}/{}", &root_dir, &service))
+        .stdout(Stdio::piped())
+        .spawn();
+
+        if child.is_err() {
+            send_log(
+                &window,
+                "service:logs",
+                ServiceLog {
                     service: service.clone(),
-                    p_id: child.id(),
+                    log: child.err().unwrap().to_string(),
                 },
-            )
-            .expect("Failed to send start log");
+            );
+            return;
+        }
+
+        let mut child = child.unwrap();
+
+        send_log(
+            &window,
+            "service:start",
+            ServiceStart {
+                service: service.clone(),
+                p_id: child.id(),
+            },
+        );
 
         let stdout = child
             .stdout
@@ -71,15 +95,14 @@ pub async fn start_service(
         let reader = BufReader::new(stdout);
 
         for line in reader.lines().flatten() {
-            window
-                .emit(
-                    "service:logs",
-                    ServiceLog {
-                        service: service.clone(),
-                        log: line,
-                    },
-                )
-                .expect("Failed to send logs");
+            send_log(
+                &window,
+                "service:logs",
+                ServiceLog {
+                    service: service.clone(),
+                    log: line,
+                },
+            );
         }
 
         child.wait().expect("Failed to running the service");
@@ -88,8 +111,8 @@ pub async fn start_service(
     Ok(1)
 }
 
-#[tauri::command(async)]
-pub async fn stop_service(
+#[tauri::command]
+pub fn stop_service(
     service: String,
     state: tauri::State<'_, AppState>,
     window: Window,
@@ -105,16 +128,17 @@ pub async fn stop_service(
         .get_pid(&service)
         .unwrap();
 
-    Command::new("kill")
+    let child = Command::new("kill")
         .args(&["-s", "TERM", p_id.as_str()])
-        .spawn()
-        .expect("Failed to kill the service")
-        .wait()
-        .expect("Failed to wait");
+        .spawn();
 
-    window
-        .emit_and_trigger("service:stop", ServiceStop { service })
-        .expect("Failed to send stop signal");
+    if child.is_err() {
+        return Err(child.err().unwrap().to_string());
+    }
+
+    child.unwrap().wait().expect("Failed to wait");
+
+    send_log(&window, "service:stop", ServiceStop { service });
 
     Ok("Done".to_string())
 }

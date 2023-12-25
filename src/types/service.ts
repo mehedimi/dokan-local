@@ -13,7 +13,7 @@ export interface LogMessage {
 
 export interface ServiceStart {
   service: Service;
-  p_id: number
+  p_id: number;
 }
 
 export interface ServiceStop {

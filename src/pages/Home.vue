@@ -14,7 +14,7 @@
     <fwb-accordion open-first-item always-open class="mt-6">
       <fwb-accordion-panel v-for="service in Object.values(Service)">
         <fwb-accordion-header
-          >{{ service }}
+          >{{ service }}:{{ ports[service] }}
           <fwb-button
             v-if="!runningServices.hasOwnProperty(service)"
             size="xs"
@@ -57,7 +57,7 @@ import {
   FwbInput,
   FwbBadge,
 } from "flowbite-vue";
-import { AppEvent, Service } from "../enum/service.ts";
+import { AppEvent, ports, Service } from "../enum/service.ts";
 import { nextTick, reactive, Ref, ref } from "vue";
 import { message, open } from "@tauri-apps/api/dialog";
 import { useService } from "../composables/useService.ts";
@@ -113,11 +113,14 @@ function startService(name: string) {
 }
 
 async function stopService(name: string) {
-  return service.stop(name).catch(async (msg) => {
-    await message(msg, { type: "error" });
-  }).then((log) => {
-    console.log(log)
-  });
+  return service
+    .stop(name)
+    .catch(async (msg) => {
+      await message(msg, { type: "error" });
+    })
+    .then((log) => {
+      console.log(log);
+    });
 }
 
 async function browseRootFolder() {

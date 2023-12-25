@@ -19,9 +19,11 @@ export function useService(
   }
 
   async function getRunning() {
-    return invoke<{ [k: string]: number }>(Command.RUNNING_SERVICE).then((data) => {
-      running.value = data;
-    });
+    return invoke<{ [k: string]: number }>(Command.RUNNING_SERVICE).then(
+      (data) => {
+        running.value = data;
+      },
+    );
   }
 
   async function stop(name: string) {

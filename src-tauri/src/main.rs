@@ -2,14 +2,16 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use crate::commands::service::{ServiceStart, ServiceStop};
-use crate::state::{AppState};
-use std::sync::{Arc};
-use tauri::{Manager};
+use crate::state::AppState;
+use std::sync::Arc;
+use tauri::{Manager, RunEvent};
 
 mod commands;
 mod state;
 
 fn main() {
+    let _ = fix_path_env::fix();
+
     tauri::Builder::default()
         .setup(|app| {
             let state = app.state::<AppState>().clone();
@@ -37,6 +39,7 @@ fn main() {
             Ok(())
         })
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::service::start_service,

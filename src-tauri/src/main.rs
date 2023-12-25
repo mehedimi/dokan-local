@@ -4,7 +4,7 @@
 use crate::commands::service::{ServiceStart, ServiceStop};
 use crate::state::AppState;
 use std::sync::Arc;
-use tauri::{Manager, RunEvent};
+use tauri::{Manager, RunEvent, WindowEvent};
 
 mod commands;
 mod state;
@@ -19,8 +19,6 @@ fn main() {
 
             let state_clone = Arc::clone(&state.running_service);
 
-            let state_clone_2 = Arc::clone(&state.running_service);
-
             main_window.listen("service:start", move |event| {
                 let payload: ServiceStart =
                     serde_json::from_str(event.payload().unwrap()).expect("Failed to parse JSON");
@@ -30,10 +28,21 @@ fn main() {
                     .add(payload.service, payload.p_id);
             });
 
+            let state_clone = Arc::clone(&state.running_service);
+
             main_window.listen("service:stop", move |event| {
                 let payload: ServiceStop =
                     serde_json::from_str(event.payload().unwrap()).expect("Failed to parse JSON");
-                state_clone_2.lock().unwrap().remove(&payload.service);
+                state_clone.lock().unwrap().remove(&payload.service);
+            });
+
+            let state_clone = Arc::clone(&state.running_service);
+
+            main_window.on_window_event(move |event| match event {
+                WindowEvent::CloseRequested { .. } => {
+                    state_clone.lock().unwrap().close_all();
+                }
+                _ => {}
             });
 
             Ok(())

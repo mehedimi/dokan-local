@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 #[derive(Default)]
@@ -35,5 +36,34 @@ impl RunningService {
 
     pub fn running(&self) -> HashMap<String, u32> {
         self.list.clone()
+    }
+
+    pub fn close_by_pid(&self, pid: &str) -> bool {
+        let child = Command::new("kill").args(["-s", "TERM", pid]).spawn();
+
+        if child.is_err() {
+            return false;
+        }
+
+        let child = child.unwrap().wait();
+
+        if child.is_err() {
+            return false;
+        }
+
+        child.unwrap().success()
+    }
+
+    pub fn close(&self, service: &String) -> bool {
+        match self.list.get(service) {
+            Some(pid) => self.close_by_pid(pid.to_string().as_str()),
+            None => false,
+        }
+    }
+
+    pub fn close_all(&self) {
+        for (_, pid) in self.list.clone().into_iter() {
+            self.close_by_pid(pid.to_string().as_str());
+        }
     }
 }

@@ -48,9 +48,7 @@ pub async fn start_service(
         let child = match service.as_str() {
             "storefront" => child.args(["dev", "-p", "3001"]),
             "dashboard" => child.args(["dev", "--port", "3000"]),
-            _ => child
-                .arg("dev")
-                .env("APP_PORT", port.to_string()),
+            _ => child.arg("dev").env("APP_PORT", port.to_string()),
         }
         .current_dir(format!("{}/{}", &root_dir, &service))
         .stdout(Stdio::piped())
@@ -113,22 +111,7 @@ pub fn stop_service(
         return Err(format!("This {} is not running!", service));
     }
 
-    let p_id = state
-        .running_service
-        .lock()
-        .unwrap()
-        .get_pid(&service)
-        .unwrap();
-
-    let child = Command::new("kill")
-        .args(&["-s", "TERM", p_id.as_str()])
-        .spawn();
-
-    if child.is_err() {
-        return Err(child.err().unwrap().to_string());
-    }
-
-    child.unwrap().wait().expect("Failed to wait");
+    state.running_service.lock().unwrap().close(&service);
 
     send_log(&window, "service:stop", ServiceStop { service });
 

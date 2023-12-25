@@ -43,21 +43,13 @@ pub async fn start_service(
     }
 
     tokio::spawn(async move {
-        let mut child = Command::new("npx");
+        let mut child = Command::new("pnpm");
 
         let child = match service.as_str() {
-            "storefront" => child.args(["npx", "next", "dev", "-p", "3001"]),
-            "dashboard" => child.args(["pnpm", "dev", "--port", "3000"]),
+            "storefront" => child.args(["dev", "-p", "3001"]),
+            "dashboard" => child.args(["dev", "--port", "3000"]),
             _ => child
-                .args([
-                    "ts-node-dev",
-                    "--respawn",
-                    "--transpile-only",
-                    "--exit-child",
-                    "-r",
-                    "tsconfig-paths/register",
-                    "src/index.ts",
-                ])
+                .arg("dev")
                 .env("APP_PORT", port.to_string()),
         }
         .current_dir(format!("{}/{}", &root_dir, &service))

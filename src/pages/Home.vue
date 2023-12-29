@@ -1,7 +1,7 @@
 <template>
   <div class="my-6">
     <fwb-input
-      :model-value="rootDir"
+      :model-value="appState.rootDir"
       disabled
       placeholder="Please select your product root folder"
       size="lg"
@@ -20,6 +20,7 @@
             size="xs"
             @click.stop="startService(service)"
             color="light"
+            :disabled="!appState.rootDir"
             >Start</fwb-button
           >
           <template v-else>
@@ -29,18 +30,27 @@
             <fwb-badge class="!inline-block" size="xs"
               >PID: {{ runningServices[service] }}</fwb-badge
             >
-            <fwb-button size="xs" @click.stop="stopService(service)" color="red"
+            <fwb-button
+              class="!inline-block"
+              size="xs"
+              @click.stop="stopService(service)"
+              color="red"
               >Stop</fwb-button
+            >
+
+            <fwb-button
+              size="xs"
+              @click.stop="restartService(service)"
+              color="yellow"
+              class="ml-3"
+              >Restart</fwb-button
             >
           </template>
         </fwb-accordion-header>
-        <fwb-accordion-content>
-          <div
-            :id="service"
-            class="font-fira-code text-sm h-72 overflow-x-auto"
-          >
-            <p v-for="log in logs[service]">{{ log }}</p>
-          </div>
+        <fwb-accordion-content
+          class="font-fira-code bg-gray-100 overflow-x-auto"
+        >
+          <div :id="service"></div>
         </fwb-accordion-content>
       </fwb-accordion-panel>
     </fwb-accordion>
@@ -57,43 +67,47 @@ import {
   FwbInput,
   FwbBadge,
 } from "flowbite-vue";
+import "xterm/css/xterm.css";
 import { AppEvent, ports, Service } from "../enum/service.ts";
-import { nextTick, reactive, Ref, ref } from "vue";
+import { ref } from "vue";
 import { message, open } from "@tauri-apps/api/dialog";
 import { useService } from "../composables/useService.ts";
 import { appWindow } from "@tauri-apps/api/window";
 import { LogMessage, ServiceStart, ServiceStop } from "../types/service.ts";
+import { Terminal } from "xterm";
+import { useAppStore } from "../stores/app.ts";
+import { setRootDir } from "../persist-state.ts";
 
-const rootDir = ref("/Users/mehedi/Dokan-SAAS");
+const appState = useAppStore();
 
-const logs = reactive(
-  Object.values<Service>(Service).reduce<{ [key: string]: Ref<string[]> }>(
-    (carry, current) => {
-      carry[current] = ref([]);
+const terminalInstances: Record<string, Terminal> = {};
 
-      return carry;
-    },
-    {},
-  ),
-);
+function getTerminal(service: Service) {
+  if (!terminalInstances.hasOwnProperty(service)) {
+    const t = new Terminal({
+      theme: {
+        background: "rgb(243 244 246)",
+        foreground: "#1e293b",
+        cursor: "#1e293b",
+      },
+    });
+    t.open(document.getElementById(service) as HTMLDivElement);
+    terminalInstances[service] = t;
+  }
+
+  return terminalInstances[service];
+}
 
 const runningServices = ref<{ [k: string]: number }>({});
 
-const service = useService(rootDir.value, runningServices);
+const service = useService(appState.rootDir, runningServices);
 
 service.getRunning();
 
 appWindow.listen<LogMessage>(AppEvent.SERVICE_LOG, (payload) => {
   const { service, log } = payload.payload;
-  (logs[service] as unknown as string[]).push(log);
 
-  nextTick(() => {
-    const el = document.getElementById(service) as HTMLDivElement;
-    el.scroll({
-      top: el.clientHeight + el.scrollTop,
-      behavior: "smooth",
-    });
-  });
+  getTerminal(service).writeln(log);
 });
 
 appWindow.listen<ServiceStart>(AppEvent.SERVICE_START, (payload) => {
@@ -113,19 +127,23 @@ function startService(name: string) {
 }
 
 async function stopService(name: string) {
-  return service
-    .stop(name)
-    .catch(async (msg) => {
-      await message(msg, { type: "error" });
-    })
-    .then((log) => {
-      console.log(log);
-    });
+  return service.stop(name).catch(async (msg) => {
+    await message(msg, { type: "error" });
+  });
 }
 
 async function browseRootFolder() {
   const dir = await open({ directory: true, multiple: false });
 
-  rootDir.value = dir as string;
+  if (!dir) return;
+
+  await setRootDir(dir as string);
+  appState.rootDir = dir as string;
+}
+
+async function restartService(service: Service) {
+  return stopService(service).then(() => {
+    startService(service);
+  });
 }
 </script>

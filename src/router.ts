@@ -8,5 +8,10 @@ export const router = createRouter({
       component: () => import("./pages/Home.vue"),
       name: "home.index",
     },
+    {
+      path: "/env",
+      component: () => import("./pages/Env.vue"),
+      name: "env.index",
+    },
   ],
 });

@@ -1,16 +1,19 @@
 export enum Service {
   DASHBOARD = "dashboard",
   STOREFRONT = "storefront",
-  AUTH_SERVICE = "auth-service",
-  USER_SERVICE = "user-service",
-  CART_SERVICE = "cart-service",
-  CATALOG_SERVICE = "catalog-service",
-  ORDER_SERVICE = "order-service",
+  AUTH = "auth-service",
+  USER = "user-service",
+  CART = "cart-service",
+  CATALOG = "catalog-service",
+  ORDER = "order-service",
   PAYMENT = "payment-service",
   TAX = "tax-service",
   NOTIFICATION = "notification-service",
   CONTENT = "content-service",
   INTEGRATION = "integration-service",
+  REPORT = "report-service",
+  COUPON = "coupon-service",
+  SHIPPING = "shipping-service",
 }
 
 let initPort = 3000;

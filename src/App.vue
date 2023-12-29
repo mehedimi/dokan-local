@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  FwbNavbar,
-  FwbNavbarCollapse,
-  FwbNavbarLink,
-  FwbNavbarLogo,
-} from "flowbite-vue";
+import { FwbNavbar, FwbNavbarCollapse } from "flowbite-vue";
 import { open } from "@tauri-apps/api/shell";
 import { useAppStore } from "./stores/app.ts";
 import { getRootDir } from "./persist-state.ts";

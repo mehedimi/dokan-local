@@ -12,3 +12,10 @@ Run the development server:
 ```bash
 pnpm tauri dev
 ```
+It will open a new window with your Tauri application.
+You can now edit your Tauri project and see the changes in real-time.
+
+
+## Learn more
+To learn more about Tauri, take a look at the following resources:
+- [Tauri documentation](https://tauri.app/)

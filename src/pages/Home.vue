@@ -12,14 +12,14 @@
     </fwb-input>
 
     <fwb-accordion open-first-item always-open class="mt-6">
-      <fwb-accordion-panel v-for="service in services">
+      <fwb-accordion-panel v-for="service in Object.values(Service)">
         <fwb-accordion-header>
           <div class="flex items-center">
-            {{ service.name }}:{{ ports[service.name] }}
+            {{ service }}:{{ ports[service] }}
             <fwb-button
-              v-if="!runningServices.hasOwnProperty(service.name)"
+              v-if="!runningServices.hasOwnProperty(service)"
               size="xs"
-              @click.stop="startService(service.name)"
+              @click.stop="startService(service)"
               color="light"
               :disabled="!appState.rootDir"
               >Start</fwb-button
@@ -29,19 +29,19 @@
                 >Running</fwb-badge
               >
               <fwb-badge class="!inline-block" size="xs"
-                >PID: {{ runningServices[service.name] }}</fwb-badge
+                >PID: {{ runningServices[service] }}</fwb-badge
               >
               <fwb-button
                 class="!inline-block"
                 size="xs"
-                @click.stop="stopService(service.name)"
+                @click.stop="stopService(service)"
                 color="red"
                 >Stop</fwb-button
               >
 
               <fwb-button
                 size="xs"
-                @click.stop="restartService(service.name)"
+                @click.stop="restartService(service)"
                 color="yellow"
                 class="ml-3"
                 >Restart</fwb-button
@@ -49,7 +49,7 @@
             </template>
 
             <a
-              :href="service.repoUrl"
+              :href="`https://github.com/getdokan/${service}`"
               target="_blank"
               class="inline-block w-6 ml-auto mr-2"
             >
@@ -60,7 +60,7 @@
         <fwb-accordion-content
           class="font-fira-code bg-gray-100 overflow-x-auto"
         >
-          <div :id="service.name"></div>
+          <div :id="service"></div>
         </fwb-accordion-content>
       </fwb-accordion-panel>
     </fwb-accordion>
@@ -88,7 +88,6 @@ import { LogMessage, ServiceStart, ServiceStop } from "../types/service.ts";
 import { Terminal } from "xterm";
 import { useAppStore } from "../stores/app.ts";
 import { setRootDir } from "../persist-state.ts";
-import { services } from "../constants";
 
 const appState = useAppStore();
 

@@ -48,13 +48,13 @@
               >
             </template>
 
-            <a
-              :href="`https://github.com/getdokan/${service}`"
+            <button
+              @click.stop="linkOpen(`https://github.com/getdokan/${service}`)"
               target="_blank"
               class="inline-block w-6 ml-auto mr-2"
             >
               <github-icon />
-            </a>
+            </button>
           </div>
         </fwb-accordion-header>
         <fwb-accordion-content
@@ -88,6 +88,7 @@ import { LogMessage, ServiceStart, ServiceStop } from "../types/service.ts";
 import { Terminal } from "xterm";
 import { useAppStore } from "../stores/app.ts";
 import { setRootDir } from "../persist-state.ts";
+import { open as linkOpen } from "@tauri-apps/api/shell";
 
 const appState = useAppStore();
 

@@ -42,8 +42,14 @@ pub async fn start_service(
         return Err(format!("{} is already been running", &service));
     }
 
+    let program = if &service == "shipping-service" {
+        "air"
+    } else {
+        "pnpm"
+    };
+
     tokio::spawn(async move {
-        let mut child = Command::new("pnpm");
+        let mut child = Command::new(program);
 
         let child = match service.as_str() {
             "storefront" => child.args(["dev", "-p", "3001"]),

@@ -13,40 +13,42 @@
 
     <fwb-accordion open-first-item always-open class="mt-6">
       <fwb-accordion-panel v-for="service in Object.values(Service)">
-        <fwb-accordion-header>
+        <fwb-accordion-header class="[&>button]:py-3">
           <div class="flex items-center">
-            {{ service }}:{{ ports[service] }}
-            <fwb-button
-              v-if="!runningServices.hasOwnProperty(service)"
-              size="xs"
-              @click.stop="startService(service)"
-              color="light"
-              :disabled="!appState.rootDir"
-              >Start</fwb-button
-            >
-            <template v-else>
-              <fwb-badge class="!inline-block" size="xs" type="green"
-                >Running</fwb-badge
-              >
-              <fwb-badge class="!inline-block" size="xs"
-                >PID: {{ runningServices[service] }}</fwb-badge
-              >
+            <div>
+              {{ service }}:{{ ports[service] }}
               <fwb-button
-                class="!inline-block"
+                v-if="!runningServices.hasOwnProperty(service)"
                 size="xs"
-                @click.stop="stopService(service)"
-                color="red"
-                >Stop</fwb-button
+                @click.stop="startService(service)"
+                color="light"
+                :disabled="!appState.rootDir"
+                >Start</fwb-button
               >
+              <template v-else>
+                <fwb-badge class="!inline-block" size="xs" type="green"
+                  >Running</fwb-badge
+                >
+                <fwb-badge class="!inline-block" size="xs"
+                  >PID: {{ runningServices[service] }}</fwb-badge
+                >
+                <fwb-button
+                  class="!inline-block"
+                  size="xs"
+                  @click.stop="stopService(service)"
+                  color="red"
+                  >Stop</fwb-button
+                >
 
-              <fwb-button
-                size="xs"
-                @click.stop="restartService(service)"
-                color="yellow"
-                class="ml-3"
-                >Restart</fwb-button
-              >
-            </template>
+                <fwb-button
+                  size="xs"
+                  @click.stop="restartService(service)"
+                  color="yellow"
+                  class="ml-3"
+                  >Restart</fwb-button
+                >
+              </template>
+            </div>
 
             <button
               @click.stop="linkOpen(`https://github.com/getdokan/${service}`)"

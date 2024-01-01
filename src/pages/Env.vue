@@ -137,14 +137,29 @@
   </fwb-accordion>
   <div class="grid md:grid-cols-2 gap-x-10 my-10">
     <div>
-      <h3 class="mb-5 text-lg">FRONTEND ENV</h3>
+      <div class="flex justify-between my-2">
+        <h3 class="mb-5 text-lg align-middle">FRONTEND ENV</h3>
+      </div>
+
       <pre class="overflow-x-auto bg-gray-100 p-5"
         >{{ "#Dashboard ENV\n\n" }}{{ dashboardEnv.join("\n")
         }}{{ "\n\n# Storefront ENV\n\n" }}{{ storeFrontEnv.join("\n") }}
       </pre>
     </div>
     <div>
-      <h3 class="mb-5 text-lg">BACKEND ENV</h3>
+      <div class="flex justify-between">
+        <h3 class="mb-5 text-lg">BACKEND ENV</h3>
+        <div>
+          <fwb-button
+            @click="copy(backendEnv.join('\n'))"
+            size="xs"
+            color="light"
+            :disabled="copied"
+            >{{ copied ? "Copied" : "Copy" }}</fwb-button
+          >
+        </div>
+      </div>
+
       <pre class="overflow-x-auto bg-gray-100 p-5">{{
         backendEnv.join("\n")
       }}</pre>
@@ -160,9 +175,13 @@ import {
   FwbAccordionHeader,
   FwbAccordionPanel,
   FwbInput,
+  FwbButton,
 } from "flowbite-vue";
 import { Service } from "../enum/service.ts";
 import { useConfigState } from "../stores/config.ts";
+import { useClipboard } from "@vueuse/core";
+
+const { copy, copied, isSupported } = useClipboard();
 
 let port = 3002;
 const state = useConfigState();

@@ -181,7 +181,7 @@ import { Service } from "../enum/service.ts";
 import { useConfigState } from "../stores/config.ts";
 import { useClipboard } from "@vueuse/core";
 
-const { copy, copied, isSupported } = useClipboard();
+const { copy, copied } = useClipboard();
 
 let port = 3002;
 const state = useConfigState();

@@ -10,3 +10,4 @@ export function getRootDir() {
 export function setRootDir(dir: string) {
   return persistState.set(State.ROOT_DIR, dir);
 }
+

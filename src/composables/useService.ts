@@ -2,7 +2,7 @@ import { StartService } from "../types/service.ts";
 import { invoke } from "@tauri-apps/api";
 import { Command } from "../enum/command.ts";
 import { ports } from "../enum/service.ts";
-import { Ref } from "vue";
+import { ref, Ref } from "vue";
 
 export function useService(
   rootDir: string,
@@ -31,4 +31,14 @@ export function useService(
   }
 
   return { start, getRunning, stop };
+}
+
+export function useSubmit() {
+  const value = ref(false);
+
+  function setState(state: boolean) {
+    value.value = state;
+  }
+
+  return { value, setState };
 }

@@ -128,3 +128,25 @@ pub fn stop_service(
 pub fn running_service(state: tauri::State<AppState>) -> HashMap<String, u32> {
     state.running_service.lock().unwrap().running()
 }
+
+#[tauri::command]
+pub async fn symlink_env(services: Vec<String>) -> Result<bool, String> {
+    for service in services {
+        let child = Command::new("ln")
+            .args(["-s", "../main.env", "./backend-common/.env"])
+            .spawn()
+            .unwrap();
+
+        let output = child.wait_with_output();
+
+        if output.is_err() {
+            return Err(format!(
+                "{}: {}",
+                &service,
+                output.err().unwrap().to_string()
+            ));
+        }
+    }
+
+    Ok(true)
+}

@@ -22,7 +22,7 @@
                 size="xs"
                 @click.stop="startService(service)"
                 color="light"
-                :disabled="!appState.rootDir"
+                :disabled="!appState.rootDir || startServiceButton.value.value"
                 >Start</fwb-button
               >
               <template v-else>
@@ -52,7 +52,6 @@
 
             <button
               @click.stop="linkOpen(`https://github.com/getdokan/${service}`)"
-              target="_blank"
               class="inline-block w-6 ml-auto mr-2"
             >
               <github-icon />
@@ -62,7 +61,7 @@
         <fwb-accordion-content
           class="font-fira-code bg-gray-100 overflow-x-auto"
         >
-          <div :id="service"></div>
+          <Terminal ref="terminals" :service="service" />
         </fwb-accordion-content>
       </fwb-accordion-panel>
     </fwb-accordion>
@@ -84,44 +83,28 @@ import "xterm/css/xterm.css";
 import { AppEvent, ports, Service } from "../enum/service.ts";
 import { ref } from "vue";
 import { message, open } from "@tauri-apps/api/dialog";
-import { useService } from "../composables/useService.ts";
+import { useService, useSubmit } from "../composables/useService.ts";
 import { appWindow } from "@tauri-apps/api/window";
 import { LogMessage, ServiceStart, ServiceStop } from "../types/service.ts";
-import { Terminal } from "xterm";
 import { useAppStore } from "../stores/app.ts";
 import { setRootDir } from "../persist-state.ts";
 import { open as linkOpen } from "@tauri-apps/api/shell";
+import Terminal from "../components/Terminal.vue";
+import { useLogStore } from "../stores/log.ts";
 
 const appState = useAppStore();
-
-const terminalInstances: Record<string, Terminal> = {};
-
-function getTerminal(service: Service) {
-  if (!terminalInstances.hasOwnProperty(service)) {
-    const t = new Terminal({
-      theme: {
-        background: "rgb(243 244 246)",
-        foreground: "#1e293b",
-        cursor: "#1e293b",
-      },
-    });
-    t.open(document.getElementById(service) as HTMLDivElement);
-    terminalInstances[service] = t;
-  }
-
-  return terminalInstances[service];
-}
 
 const runningServices = ref<{ [k: string]: number }>({});
 
 const service = useService(appState.rootDir, runningServices);
+const startServiceButton = useSubmit();
+const logStore = useLogStore();
 
 service.getRunning();
 
 appWindow.listen<LogMessage>(AppEvent.SERVICE_LOG, (payload) => {
   const { service, log } = payload.payload;
-
-  getTerminal(service).writeln(log);
+  logStore.$state[service] = log;
 });
 
 appWindow.listen<ServiceStart>(AppEvent.SERVICE_START, (payload) => {
@@ -135,9 +118,20 @@ appWindow.listen<ServiceStop>(AppEvent.SERVICE_STOP, (payload) => {
 });
 
 function startService(name: string) {
-  service.start(name).catch(async (err: string) => {
-    await message(err, { type: "error" });
-  });
+  if (startServiceButton.value.value) {
+    return;
+  }
+
+  startServiceButton.setState(true);
+
+  service
+    .start(name)
+    .catch(async (err: string) => {
+      await message(err, { type: "error" });
+    })
+    .finally(() => {
+      startServiceButton.setState(false);
+    });
 }
 
 async function stopService(name: string) {

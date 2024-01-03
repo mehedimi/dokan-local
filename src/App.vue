@@ -34,8 +34,11 @@ getRootDir().then((dir) => {
         </fwb-navbar-collapse>
       </template>
     </fwb-navbar>
-
-    <router-view></router-view>
+    <router-view v-slot="{ Component }">
+      <keep-alive>
+        <component :is="Component" />
+      </keep-alive>
+    </router-view>
   </div>
   <p class="text-center py-6 bg-gray-200">
     Made by

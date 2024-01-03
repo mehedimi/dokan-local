@@ -10,7 +10,6 @@ export const useConfigState = defineStore("config", {
         user: "dokan_app",
         pass: "dokan_app",
         port: "5678",
-        db_name: "",
         option: "",
       },
       mongo: {
@@ -18,7 +17,6 @@ export const useConfigState = defineStore("config", {
         user: "",
         pass: "",
         port: "27017",
-        db_name: "",
         db_option: "",
       },
       rabbitmq: {

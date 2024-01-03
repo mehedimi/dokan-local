@@ -4,7 +4,7 @@
 use crate::commands::service::{ServiceStart, ServiceStop};
 use crate::state::AppState;
 use std::sync::Arc;
-use tauri::{Manager, RunEvent, WindowEvent};
+use tauri::{Manager, WindowEvent};
 
 mod commands;
 mod state;

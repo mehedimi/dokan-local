@@ -157,6 +157,9 @@
             :disabled="copied"
             >{{ copied ? "Copied" : "Copy" }}</fwb-button
           >
+          <fwb-button size="xs" class="ml-2" @click="saveEnv" color="default"
+            >Save</fwb-button
+          >
         </div>
       </div>
 
@@ -180,6 +183,9 @@ import {
 import { Service } from "../enum/service.ts";
 import { useConfigState } from "../stores/config.ts";
 import { useClipboard } from "@vueuse/core";
+import { message } from "@tauri-apps/api/dialog";
+import { useAppStore } from "../stores/app.ts";
+import { writeTextFile } from "@tauri-apps/api/fs";
 
 const { copy, copied } = useClipboard();
 
@@ -248,6 +254,7 @@ const postgresEnv = computed(() => {
       `${key}_DB_PORT=${state.pg.port}`,
       `${key}_DB_USER=${state.pg.user}`,
       `${key}_DB_PASS=${state.pg.pass}`,
+      `${key}_DB_NAME=${key.toLowerCase()}`,
       `${key}_DB_OPTION=${state.pg.option}`,
     ];
   });
@@ -264,9 +271,20 @@ const mongoEnv = computed(() => {
       `${key}_NOSQL_DB_HOST=${state.pg.host}`,
       `${key}_NOSQL_DB_PORT=${state.pg.port}`,
       `${key}_NOSQL_DB_USER=${state.pg.user}`,
+      `${key}_NOSQL_DB_NAME=${key.toLowerCase()}`,
       `${key}_NOSQL_DB_PASS=${state.pg.pass}`,
       `${key}_NOSQL_DB_OPTION=${state.pg.option}`,
     ];
   });
 });
+
+const appStore = useAppStore();
+
+async function saveEnv() {
+  await writeTextFile(
+    `${appStore.rootDir}/main.env`,
+    backendEnv.value.join("\n"),
+  );
+  return message("Env file saved", { type: "info", title: "Info" });
+}
 </script>

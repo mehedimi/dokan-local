@@ -16,6 +16,10 @@
         "open": true,
         "message": true
       },
+      "fs": {
+        "scope": ["$HOME/*", "**"],
+        "writeFile": true
+      },
       "shell": {
         "all": false,
         "open": true

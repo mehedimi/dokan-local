@@ -1,15 +1,6 @@
 <template>
   <div class="my-6">
-    <fwb-input
-      :model-value="appState.rootDir"
-      disabled
-      placeholder="Please select your product root folder"
-      size="lg"
-    >
-      <template #suffix>
-        <fwb-button @click="browseRootFolder">Browse</fwb-button>
-      </template>
-    </fwb-input>
+    <fwb-input :model-value="appState.rootDir" disabled size="lg"/>
 
     <fwb-accordion open-first-item always-open class="mt-6">
       <fwb-accordion-panel v-for="service in Object.values(Service)">
@@ -82,12 +73,11 @@ import {
 import "xterm/css/xterm.css";
 import { AppEvent, ports, Service } from "../enum/service.ts";
 import { ref } from "vue";
-import { message, open } from "@tauri-apps/api/dialog";
+import { message } from "@tauri-apps/api/dialog";
 import { useService, useSubmit } from "../composables/useService.ts";
 import { appWindow } from "@tauri-apps/api/window";
 import { LogMessage, ServiceStart, ServiceStop } from "../types/service.ts";
 import { useAppStore } from "../stores/app.ts";
-import { setRootDir } from "../persist-state.ts";
 import { open as linkOpen } from "@tauri-apps/api/shell";
 import Terminal from "../components/Terminal.vue";
 import { useLogStore } from "../stores/log.ts";
@@ -140,14 +130,7 @@ async function stopService(name: string) {
   });
 }
 
-async function browseRootFolder() {
-  const dir = await open({ directory: true, multiple: false });
 
-  if (!dir) return;
-
-  await setRootDir(dir as string);
-  appState.rootDir = dir as string;
-}
 
 async function restartService(service: Service) {
   return stopService(service).then(() => {

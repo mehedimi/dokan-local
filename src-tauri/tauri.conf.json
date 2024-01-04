@@ -18,7 +18,8 @@
       },
       "fs": {
         "scope": ["$HOME/*", "**"],
-        "writeFile": true
+        "writeFile": true,
+        "readDir": true
       },
       "shell": {
         "all": false,

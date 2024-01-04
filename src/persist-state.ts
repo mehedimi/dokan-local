@@ -10,3 +10,11 @@ export function getRootDir() {
 export function setRootDir(dir: string) {
   return persistState.set(State.ROOT_DIR, dir);
 }
+
+export function setGitHubToken(token: string) {
+  return persistState.set(State.GH_TOKEN, token);
+}
+
+export function getGitHubToken() {
+  return persistState.get<string>(State.GH_TOKEN);
+}

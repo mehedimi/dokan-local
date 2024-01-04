@@ -29,4 +29,6 @@ export enum AppEvent {
   SERVICE_LOG = "service:logs",
   SERVICE_START = "service:start",
   SERVICE_STOP = "service:stop",
+  SERVICE_CLONE = "service:clone",
+  SERVICE_CLONE_FINISH = "service:clone:finish",
 }

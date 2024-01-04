@@ -1,7 +1,8 @@
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, stderr};
+use std::path::Path;
 use std::process::{Command, Stdio};
 use tauri::Window;
 
@@ -20,6 +21,12 @@ pub struct ServiceStart {
 #[derive(Serialize, Clone, Deserialize, Debug)]
 pub struct ServiceStop {
     pub service: String,
+}
+
+#[derive(Serialize, Clone, Deserialize, Debug)]
+pub struct ServiceClone {
+    pub service: String,
+    pub log: String,
 }
 
 fn send_log<S: serde::Serialize>(window: &Window, event: &str, payload: S) {
@@ -101,6 +108,25 @@ pub async fn start_service(
             );
         }
 
+        match child.stderr.take() {
+            Some(stderr) => {
+                let reader = BufReader::new(stderr);
+
+                for line in reader.lines().flatten() {
+                    send_log(
+                        &window,
+                        "service:logs",
+                        ServiceLog {
+                            service: service.clone(),
+                            log: line,
+                        },
+                    );
+                }
+            },
+            None => ()
+        };
+
+
         child.wait().expect("Failed to running the service");
     });
 
@@ -147,6 +173,81 @@ pub async fn symlink_env(services: Vec<String>) -> Result<bool, String> {
             ));
         }
     }
+
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn clone_repo(
+    root_dir: String,
+    services: Vec<String>,
+    window: Window,
+) -> Result<bool, String> {
+    let cloned_window = window.clone();
+
+    tokio::spawn(async move {
+        for service in services {
+            let repo_path = format!("{}/{}", &root_dir.clone(), &service);
+
+            let path = Path::new(repo_path.as_str());
+
+            if path.exists() {
+                cloned_window.emit(
+                    "service:clone",
+                    ServiceClone {
+                        service: service.clone(),
+                        log: "Already cloned".to_string(),
+                    },
+                ).expect("Sending log failed");
+            } else {
+                let mut child = Command::new("git")
+                    .args(["clone", format!("git@github.com:getdokan/{}.git", &service).as_str()])
+                    .current_dir(&root_dir)
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .unwrap();
+
+                let stdout = child
+                    .stdout
+                    .take()
+                    .expect("Failed to stream output to stdout");
+
+                let reader = BufReader::new(stdout);
+
+                for line in reader.lines().flatten() {
+                    cloned_window.emit(
+                        "service:clone",
+                        ServiceClone {
+                            service: service.clone(),
+                            log: line,
+                        },
+                    ).expect("Sending log failed");
+                }
+                
+                match child.stderr.take() {
+                    Some(stderr) => {
+                        let reader = BufReader::new(stderr);
+
+                        for line in reader.lines().flatten() {
+                            cloned_window.emit(
+                                "service:clone",
+                                ServiceClone {
+                                    service: service.clone(),
+                                    log: line,
+                                },
+                            ).expect("Sending log failed");
+                        }
+                    },
+                    None => ()
+                };
+
+                child.wait().expect("Failed to clone the service");
+            }
+        }
+    });
+
+    window.emit("service:clone:finish", ()).expect("Sending log failed");
 
     Ok(true)
 }

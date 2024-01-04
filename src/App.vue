@@ -2,12 +2,25 @@
 import { FwbNavbar, FwbNavbarCollapse } from "flowbite-vue";
 import { open } from "@tauri-apps/api/shell";
 import { useAppStore } from "./stores/app.ts";
-import { getRootDir } from "./persist-state.ts";
+import { useRoute, useRouter } from "vue-router";
+import { onMounted } from "vue";
+
+const router = useRouter();
+const route = useRoute();
 
 const appState = useAppStore();
 
-getRootDir().then((dir) => {
-  appState.rootDir = dir ?? "";
+onMounted(() => {
+  (async () => {
+    if (
+      !(await appState.fetch()) &&
+      !(route.name as string | undefined)?.startsWith("setup")
+    ) {
+      await router.push({
+        name: "setup.basic",
+      });
+    }
+  })();
 });
 </script>
 
@@ -30,6 +43,13 @@ getRootDir().then((dir) => {
             :to="{ name: 'env.index' }"
           >
             ENV
+          </router-link>
+          <router-link
+            active-class="router-link-exact-active"
+            class="block py-2 pr-4 pl-3 rounded md:p-0 text-gray-700 hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 dark:text-gray-400 md:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
+            :to="{ name: 'setup.basic' }"
+          >
+            Setup
           </router-link>
         </fwb-navbar-collapse>
       </template>

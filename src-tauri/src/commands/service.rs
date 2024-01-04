@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader, stderr};
+use std::io::{stderr, BufRead, BufReader};
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tauri::Window;
@@ -122,10 +122,9 @@ pub async fn start_service(
                         },
                     );
                 }
-            },
-            None => ()
+            }
+            None => (),
         };
-
 
         child.wait().expect("Failed to running the service");
     });
@@ -192,16 +191,21 @@ pub async fn clone_repo(
             let path = Path::new(repo_path.as_str());
 
             if path.exists() {
-                cloned_window.emit(
-                    "service:clone",
-                    ServiceClone {
-                        service: service.clone(),
-                        log: "Already cloned".to_string(),
-                    },
-                ).expect("Sending log failed");
+                cloned_window
+                    .emit(
+                        "service:clone",
+                        ServiceClone {
+                            service: service.clone(),
+                            log: "Already cloned".to_string(),
+                        },
+                    )
+                    .expect("Sending log failed");
             } else {
                 let mut child = Command::new("git")
-                    .args(["clone", format!("git@github.com:getdokan/{}.git", &service).as_str()])
+                    .args([
+                        "clone",
+                        format!("git@github.com:getdokan/{}.git", &service).as_str(),
+                    ])
                     .current_dir(&root_dir)
                     .stdout(Stdio::piped())
                     .stderr(Stdio::piped())
@@ -216,30 +220,34 @@ pub async fn clone_repo(
                 let reader = BufReader::new(stdout);
 
                 for line in reader.lines().flatten() {
-                    cloned_window.emit(
-                        "service:clone",
-                        ServiceClone {
-                            service: service.clone(),
-                            log: line,
-                        },
-                    ).expect("Sending log failed");
+                    cloned_window
+                        .emit(
+                            "service:clone",
+                            ServiceClone {
+                                service: service.clone(),
+                                log: line,
+                            },
+                        )
+                        .expect("Sending log failed");
                 }
-                
+
                 match child.stderr.take() {
                     Some(stderr) => {
                         let reader = BufReader::new(stderr);
 
                         for line in reader.lines().flatten() {
-                            cloned_window.emit(
-                                "service:clone",
-                                ServiceClone {
-                                    service: service.clone(),
-                                    log: line,
-                                },
-                            ).expect("Sending log failed");
+                            cloned_window
+                                .emit(
+                                    "service:clone",
+                                    ServiceClone {
+                                        service: service.clone(),
+                                        log: line,
+                                    },
+                                )
+                                .expect("Sending log failed");
                         }
-                    },
-                    None => ()
+                    }
+                    None => (),
                 };
 
                 child.wait().expect("Failed to clone the service");
@@ -247,7 +255,9 @@ pub async fn clone_repo(
         }
     });
 
-    window.emit("service:clone:finish", ()).expect("Sending log failed");
+    window
+        .emit("service:clone:finish", ())
+        .expect("Sending log failed");
 
     Ok(true)
 }

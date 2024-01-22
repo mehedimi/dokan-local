@@ -22,9 +22,9 @@
                 size="xs"
                 @click.stop="startService(service)"
                 color="light"
-                :disabled="!appState.rootDir || startServiceButton.value.value"
-                >Start</fwb-button
-              >
+                :disabled="startServiceButton.value.value || !appState.rootDir"
+                >Start
+              </fwb-button>
               <template v-else>
                 <fwb-badge class="!inline-block" size="xs" type="green"
                   >Running</fwb-badge
@@ -123,11 +123,14 @@ function startService(name: string) {
   }
 
   startServiceButton.setState(true);
-
+  console.log(service);
   service
     .start(name)
-    .catch(async (err: string) => {
-      await message(err, { type: "error" });
+    .then((res) => {
+      console.log(res);
+    })
+    .catch((err: string) => {
+      message(err, { type: "error" });
     })
     .finally(() => {
       startServiceButton.setState(false);

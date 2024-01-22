@@ -6,9 +6,13 @@ import { getRootDir } from "./persist-state.ts";
 
 const appState = useAppStore();
 
-getRootDir().then((dir) => {
-  appState.rootDir = dir ?? "";
-});
+getRootDir()
+  .then((dir) => {
+    appState.rootDir = dir ?? "";
+  })
+  .catch((res) => {
+    console.error(res);
+  });
 </script>
 
 <template>

@@ -3,10 +3,10 @@ import { State } from "./enum/state.ts";
 
 export const persistState = new Store("dokan-local.dat");
 
-export function getRootDir() {
+export async function getRootDir() {
   return persistState.get<string>(State.ROOT_DIR);
 }
 
-export function setRootDir(dir: string) {
+export async function setRootDir(dir: string) {
   return persistState.set(State.ROOT_DIR, dir);
 }

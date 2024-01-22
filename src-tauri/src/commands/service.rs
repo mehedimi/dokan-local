@@ -28,8 +28,8 @@ fn send_log<S: serde::Serialize>(window: &Window, event: &str, payload: S) {
         .expect(&*format!("Failed to send {} log", event))
 }
 
-#[tauri::command(async)]
-pub async fn start_service(
+#[tauri::command]
+pub fn start_service(
     window: Window,
     state: tauri::State<'_, AppState>,
     root_dir: String,
@@ -48,7 +48,7 @@ pub async fn start_service(
         "pnpm"
     };
 
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         let mut child = Command::new(program);
 
         let child = match service.as_str() {
@@ -83,22 +83,36 @@ pub async fn start_service(
             },
         );
 
-        let stdout = child
-            .stdout
-            .take()
-            .expect("Failed to stream output to stdout");
+        match child.stdout.take() {
+            Some(stdout) => {
+                for line in BufReader::new(stdout).lines().flatten() {
+                    send_log(
+                        &window,
+                        "service:logs",
+                        ServiceLog {
+                            service: service.clone(),
+                            log: line,
+                        },
+                    );
+                }
+            }
+            None => {}
+        }
 
-        let reader = BufReader::new(stdout);
-
-        for line in reader.lines().flatten() {
-            send_log(
-                &window,
-                "service:logs",
-                ServiceLog {
-                    service: service.clone(),
-                    log: line,
-                },
-            );
+        match child.stderr.take() {
+            Some(stderr) => {
+                for line in BufReader::new(stderr).lines().flatten() {
+                    send_log(
+                        &window,
+                        "service:logs",
+                        ServiceLog {
+                            service: service.clone(),
+                            log: line,
+                        },
+                    );
+                }
+            }
+            None => {}
         }
 
         child.wait().expect("Failed to running the service");
@@ -127,26 +141,4 @@ pub fn stop_service(
 #[tauri::command]
 pub fn running_service(state: tauri::State<AppState>) -> HashMap<String, u32> {
     state.running_service.lock().unwrap().running()
-}
-
-#[tauri::command]
-pub async fn symlink_env(services: Vec<String>) -> Result<bool, String> {
-    for service in services {
-        let child = Command::new("ln")
-            .args(["-s", "../main.env", "./backend-common/.env"])
-            .spawn()
-            .unwrap();
-
-        let output = child.wait_with_output();
-
-        if output.is_err() {
-            return Err(format!(
-                "{}: {}",
-                &service,
-                output.err().unwrap().to_string()
-            ));
-        }
-    }
-
-    Ok(true)
 }

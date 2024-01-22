@@ -27,13 +27,6 @@ impl RunningService {
         self.list.contains_key(name)
     }
 
-    pub fn get_pid(&self, name: &String) -> Option<String> {
-        return match self.list.get(name) {
-            Some(pid) => Some(pid.to_string()),
-            None => None,
-        };
-    }
-
     pub fn running(&self) -> HashMap<String, u32> {
         self.list.clone()
     }

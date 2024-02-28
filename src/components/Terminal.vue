@@ -3,6 +3,8 @@ import { onMounted, ref, watch } from "vue";
 import { Terminal } from "xterm";
 import { Service } from "../enum/service.ts";
 import { useLogStore } from "../stores/log.ts";
+import { FitAddon } from "xterm-addon-fit";
+import { useDebounceFn } from "@vueuse/core";
 
 const logStore = useLogStore();
 const props = defineProps<{ service: Service }>();
@@ -17,9 +19,22 @@ onMounted(() => {
       cursor: "#1e293b",
       selectionBackground: "#ddd",
     },
+    cols: 150,
   });
 
+  const fitAddon = new FitAddon();
+
+  terminal.loadAddon(fitAddon);
   terminal.open(el.value as HTMLDivElement);
+
+  fitAddon.fit();
+
+  window.addEventListener(
+    "resize",
+    useDebounceFn(() => {
+      fitAddon.fit();
+    }, 100),
+  );
 });
 
 watch(

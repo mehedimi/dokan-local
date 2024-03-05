@@ -123,7 +123,6 @@ function startService(name: string) {
   }
 
   startServiceButton.setState(true);
-  console.log(service);
   service
     .start(name)
     .then((res) => {

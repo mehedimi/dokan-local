@@ -42,12 +42,9 @@ watch(
   (val) => {
     terminal.writeln(val);
   },
-  { deep: true },
 );
 </script>
 
 <template>
   <div ref="el"></div>
 </template>
-
-<style scoped lang="postcss"></style>

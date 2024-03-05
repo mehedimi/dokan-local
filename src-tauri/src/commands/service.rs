@@ -58,6 +58,7 @@ pub fn start_service(
         }
         .current_dir(format!("{}/{}", &root_dir, &service))
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn();
 
         if child.is_err() {

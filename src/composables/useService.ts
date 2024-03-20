@@ -30,7 +30,11 @@ export function useService(
     return invoke<string>(Command.STOP_SERVICE, { service: name });
   }
 
-  return { start, getRunning, stop };
+  async function pull(service: string, rootDir: string) {
+    return invoke<string>(Command.GIT_PULL, { service, rootDir });
+  }
+
+  return { start, getRunning, stop, pull };
 }
 
 export function useSubmit() {

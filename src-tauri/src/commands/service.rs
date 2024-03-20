@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::process::{Command, Stdio};
 use tauri::Window;
 
@@ -142,4 +142,59 @@ pub fn stop_service(
 #[tauri::command]
 pub fn running_service(state: tauri::State<AppState>) -> HashMap<String, u32> {
     state.running_service.lock().unwrap().running()
+}
+
+#[tauri::command]
+pub async fn git_pull(window: Window, service: String, root_dir: String) -> Result<bool, String> {
+    let path = format!("{}/{}", root_dir, &service);
+
+    let branch = Command::new("git")
+        .args(["branch", "--show-current"])
+        .current_dir(&path)
+        .output()
+        .unwrap()
+        .stdout;
+
+    let mut child = Command::new("git");
+    let child = child
+        .arg("pull")
+        .arg("origin")
+        .arg(String::from_utf8(branch).unwrap().trim_end())
+        .current_dir(format!("{}/{}", root_dir, &service))
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn();
+    if child.is_err() {
+        send_log(
+            &window,
+            "service:logs",
+            ServiceLog {
+                service: service.clone(),
+                log: child.err().unwrap().to_string(),
+            },
+        );
+        return Ok(false);
+    }
+
+    let mut child = child.unwrap();
+
+    match child.stdout.take() {
+        Some(stdout) => {
+            for line in BufReader::new(stdout).lines().flatten() {
+                send_log(
+                    &window,
+                    "service:logs",
+                    ServiceLog {
+                        service: service.clone(),
+                        log: line,
+                    },
+                );
+            }
+        }
+        None => {}
+    }
+
+    child.wait().expect("Git pull error");
+
+    Ok(true)
 }

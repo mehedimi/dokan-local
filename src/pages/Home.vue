@@ -48,6 +48,16 @@
                   >Restart</fwb-button
                 >
               </template>
+              <fwb-button
+                size="xs"
+                @click.stop="gitPull(service)"
+                color="purple"
+                class="ml-3"
+                :disabled="pulls.includes(service)"
+                >{{
+                  pulls.includes(service as Service) ? "Pulling" : "Pull"
+                }}</fwb-button
+              >
             </div>
 
             <button
@@ -85,12 +95,11 @@ import { ref } from "vue";
 import { message, open } from "@tauri-apps/api/dialog";
 import { useService, useSubmit } from "../composables/useService.ts";
 import { appWindow } from "@tauri-apps/api/window";
-import { LogMessage, ServiceStart, ServiceStop } from "../types/service.ts";
+import { ServiceStart, ServiceStop } from "../types/service.ts";
 import { useAppStore } from "../stores/app.ts";
 import { setRootDir } from "../persist-state.ts";
 import { open as linkOpen } from "@tauri-apps/api/shell";
 import Terminal from "../components/Terminal.vue";
-import { useLogStore } from "../stores/log.ts";
 
 const appState = useAppStore();
 
@@ -98,14 +107,9 @@ const runningServices = ref<{ [k: string]: number }>({});
 
 const service = useService(appState.rootDir, runningServices);
 const startServiceButton = useSubmit();
-const logStore = useLogStore();
+const pulls = ref<Service[]>([]);
 
 service.getRunning();
-
-appWindow.listen<LogMessage>(AppEvent.SERVICE_LOG, (payload) => {
-  const { service, log } = payload.payload;
-  logStore.$state[service] = log;
-});
 
 appWindow.listen<ServiceStart>(AppEvent.SERVICE_START, (payload) => {
   const { service, p_id } = payload.payload;
@@ -155,5 +159,18 @@ async function restartService(service: Service) {
   return stopService(service).then(() => {
     startService(service);
   });
+}
+
+async function gitPull(name: Service) {
+  pulls.value.push(name);
+  return service
+    .pull(name, appState.rootDir as string)
+    .then(() => {})
+    .catch(() => {})
+    .finally(() => {
+      const i = pulls.value.findIndex((p) => name === p);
+      if (i === -1) return;
+      pulls.value.splice(i, 1);
+    });
 }
 </script>

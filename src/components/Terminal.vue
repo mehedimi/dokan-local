@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref } from "vue";
 import { Terminal } from "xterm";
-import { Service } from "../enum/service.ts";
-import { useLogStore } from "../stores/log.ts";
+import { AppEvent, Service } from "../enum/service.ts";
 import { FitAddon } from "xterm-addon-fit";
 import { useDebounceFn } from "@vueuse/core";
+import { appWindow } from "@tauri-apps/api/window";
+import { LogMessage } from "../types/service.ts";
 
-const logStore = useLogStore();
 const props = defineProps<{ service: Service }>();
 const el = ref<HTMLDivElement>();
 let terminal: Terminal;
@@ -35,14 +35,15 @@ onMounted(() => {
       fitAddon.fit();
     }, 100),
   );
-});
 
-watch(
-  () => logStore.$state[props.service],
-  (val) => {
-    terminal.writeln(val);
-  },
-);
+  appWindow.listen<LogMessage>(AppEvent.SERVICE_LOG, (payload) => {
+    const { service, log } = payload.payload;
+
+    if (service === props.service) {
+      terminal.writeln(log);
+    }
+  });
+});
 </script>
 
 <template>

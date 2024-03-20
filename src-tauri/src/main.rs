@@ -53,7 +53,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::service::start_service,
             commands::service::stop_service,
-            commands::service::running_service
+            commands::service::running_service,
+            commands::service::git_pull
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

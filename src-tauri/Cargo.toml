@@ -20,6 +20,7 @@ tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", 
 fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 tokio = "1.35.1"
 tauri-plugin-window-state = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+log = "0.4.21"
 
 
 [features]

@@ -1,7 +1,7 @@
-use crate::state::AppState;
+use crate::state::{AppState, Service};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use tauri::Window;
 
@@ -15,6 +15,7 @@ struct ServiceLog {
 pub struct ServiceStart {
     pub service: String,
     pub p_id: u32,
+    pub is_dev: bool
 }
 
 #[derive(Serialize, Clone, Deserialize, Debug)]
@@ -35,6 +36,7 @@ pub fn start_service(
     root_dir: String,
     port: u32,
     service: String,
+    is_dev: bool,
 ) -> Result<u32, String> {
     // npx ts-node-dev --respawn --transpile-only --exit-child -r tsconfig-paths/register src/index.ts
 
@@ -43,18 +45,28 @@ pub fn start_service(
     }
 
     let program = if &service == "shipping-service" {
-        "air"
+        if is_dev {
+            "air"
+        } else {
+            "./tmp/api"
+        }
     } else {
         "pnpm"
+    };
+
+    let cmd = match is_dev {
+        true => "dev",
+        false => "start",
     };
 
     tauri::async_runtime::spawn(async move {
         let mut child = Command::new(program);
 
         let child = match service.as_str() {
-            "storefront" => child.args(["dev", "-p", "3001"]),
-            "dashboard" => child.args(["dev", "--port", "3000"]),
-            _ => child.arg("dev").env("APP_PORT", port.to_string()),
+            "storefront" => child.args(["run", &cmd, "-p", "3001"]),
+            "dashboard" => child.args(["run", &cmd, "--port", "3000"]),
+            "shipping-service" => child.env("APP_PORT", port.to_string()),
+            _ => child.args(["run", &cmd]).env("APP_PORT", port.to_string()),
         }
         .current_dir(format!("{}/{}", &root_dir, &service))
         .stdout(Stdio::piped())
@@ -81,6 +93,7 @@ pub fn start_service(
             ServiceStart {
                 service: service.clone(),
                 p_id: child.id(),
+                is_dev
             },
         );
 
@@ -140,7 +153,7 @@ pub fn stop_service(
 }
 
 #[tauri::command]
-pub fn running_service(state: tauri::State<AppState>) -> HashMap<String, u32> {
+pub fn running_service(state: tauri::State<AppState>) -> HashMap<String, Service> {
     state.running_service.lock().unwrap().running()
 }
 
@@ -195,6 +208,70 @@ pub async fn git_pull(window: Window, service: String, root_dir: String) -> Resu
     }
 
     child.wait().expect("Git pull error");
+
+    Ok(true)
+}
+
+#[tauri::command]
+pub async fn service_build(window: Window, service: String, root_dir: String) -> Result<bool, String> {
+    let program = if service == "shipping-service" { "go" } else {"pnpm"};
+
+    let mut child = Command::new(program);
+
+    let child = child
+        .arg("build");
+        if program == "go" {
+            child.args(["-o", "tmp/api", "cmd/api/main.go"]);
+        }
+
+    let child = child.current_dir(format!("{}/{}", root_dir, &service))
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn();
+
+    if child.is_err() {
+        send_log(
+            &window,
+            "service:logs",
+            ServiceLog {
+                service: service.clone(),
+                log: child.err().unwrap().to_string(),
+            },
+        );
+        return Ok(false);
+    }
+
+    let mut child = child.unwrap();
+
+    match child.stdout.take() {
+        Some(stdout) => {
+            for line in BufReader::new(stdout).lines().flatten() {
+                send_log(
+                    &window,
+                    "service:logs",
+                    ServiceLog {
+                        service: service.clone(),
+                        log: line,
+                    },
+                );
+            }
+        }
+        None => {}
+    }
+
+    match child.wait() {
+        Ok(_) => {}
+        Err(err) => {
+            send_log(
+                &window,
+                "service:logs",
+                ServiceLog {
+                    service: service.clone(),
+                    log: err.to_string(),
+                },
+            );
+        }
+    }
 
     Ok(true)
 }

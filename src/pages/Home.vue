@@ -17,20 +17,46 @@
           <div class="flex items-center">
             <div>
               {{ service }}:{{ ports[service] }}
-              <fwb-button
-                v-if="!runningServices.hasOwnProperty(service)"
-                size="xs"
-                @click.stop="startService(service)"
-                color="light"
-                :disabled="startServiceButton.value.value || !appState.rootDir"
-                >Start
-              </fwb-button>
+              <template v-if="!runningServices.hasOwnProperty(service)">
+                <fwb-button
+                  size="xs"
+                  @click.stop="startService(service, false)"
+                  color="light"
+                  :disabled="
+                    startServiceButton.value.value || !appState.rootDir
+                  "
+                  >Start
+                </fwb-button>
+                <fwb-button
+                  size="xs"
+                  @click.stop="startService(service, true)"
+                  color="light"
+                  :disabled="
+                    startServiceButton.value.value || !appState.rootDir
+                  "
+                  class="ml-2"
+                  >Dev
+                </fwb-button>
+                <fwb-button
+                  size="xs"
+                  @click.stop="buildService(service)"
+                  color="light"
+                  :disabled="builds.includes(service)"
+                  class="ml-2"
+                  >{{
+                    builds.includes(service as Service) ? "Building" : "Build"
+                  }}
+                </fwb-button>
+              </template>
+
               <template v-else>
                 <fwb-badge class="!inline-block" size="xs" type="green"
                   >Running</fwb-badge
                 >
                 <fwb-badge class="!inline-block" size="xs"
-                  >PID: {{ runningServices[service] }}</fwb-badge
+                  >PID:{{ runningServices[service].pid }}:{{
+                    runningServices[service].is_dev ? "dev" : "start"
+                  }}</fwb-badge
                 >
                 <fwb-button
                   class="!inline-block"
@@ -103,17 +129,20 @@ import Terminal from "../components/Terminal.vue";
 
 const appState = useAppStore();
 
-const runningServices = ref<{ [k: string]: number }>({});
+const runningServices = ref<{ [k: string]: { pid: number; is_dev: boolean } }>(
+  {},
+);
 
 const service = useService(appState.rootDir, runningServices);
 const startServiceButton = useSubmit();
 const pulls = ref<Service[]>([]);
+const builds = ref<Service[]>([]);
 
 service.getRunning();
 
 appWindow.listen<ServiceStart>(AppEvent.SERVICE_START, (payload) => {
-  const { service, p_id } = payload.payload;
-  runningServices.value[service] = p_id;
+  const { service, p_id, is_dev } = payload.payload;
+  runningServices.value[service] = { pid: p_id, is_dev };
 });
 
 appWindow.listen<ServiceStop>(AppEvent.SERVICE_STOP, (payload) => {
@@ -121,14 +150,14 @@ appWindow.listen<ServiceStop>(AppEvent.SERVICE_STOP, (payload) => {
   delete runningServices.value[service];
 });
 
-function startService(name: string) {
+function startService(name: string, isDev: boolean) {
   if (startServiceButton.value.value) {
     return;
   }
 
   startServiceButton.setState(true);
   service
-    .start(name)
+    .start(name, isDev)
     .then((res) => {
       console.log(res);
     })
@@ -137,6 +166,22 @@ function startService(name: string) {
     })
     .finally(() => {
       startServiceButton.setState(false);
+    });
+}
+
+async function buildService(name: Service) {
+  builds.value.push(name);
+  console.log(builds);
+
+  service
+    .build(name)
+    .catch((err) => {
+      message(err, { type: "error" });
+    })
+    .finally(() => {
+      const i = builds.value.findIndex((b) => name === b);
+      if (i === -1) return;
+      builds.value.splice(i, 1);
     });
 }
 
@@ -156,8 +201,12 @@ async function browseRootFolder() {
 }
 
 async function restartService(service: Service) {
+  const se = runningServices.value[service];
+
+  if (!se) return;
+
   return stopService(service).then(() => {
-    startService(service);
+    startService(service, se.is_dev);
   });
 }
 

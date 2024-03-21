@@ -25,7 +25,7 @@ fn main() {
                 state_clone
                     .lock()
                     .unwrap()
-                    .add(payload.service, payload.p_id);
+                    .add(payload.service, payload.p_id, payload.is_dev);
             });
 
             let state_clone = Arc::clone(&state.running_service);
@@ -54,7 +54,8 @@ fn main() {
             commands::service::start_service,
             commands::service::stop_service,
             commands::service::running_service,
-            commands::service::git_pull
+            commands::service::git_pull,
+            commands::service::service_build
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

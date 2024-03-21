@@ -1,6 +1,13 @@
 use std::collections::HashMap;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
+use serde::Serialize;
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Service {
+    pid: u32,
+    is_dev: bool,
+}
 
 #[derive(Default)]
 pub struct AppState {
@@ -9,12 +16,12 @@ pub struct AppState {
 
 #[derive(Default)]
 pub struct RunningService {
-    list: HashMap<String, u32>,
+    list: HashMap<String, Service>,
 }
 
 impl RunningService {
-    pub fn add(&mut self, name: String, pid: u32) -> &Self {
-        self.list.insert(name, pid);
+    pub fn add(&mut self, name: String, pid: u32, is_dev: bool) -> &Self {
+        self.list.insert(name, Service { pid, is_dev });
         return self;
     }
 
@@ -27,7 +34,7 @@ impl RunningService {
         self.list.contains_key(name)
     }
 
-    pub fn running(&self) -> HashMap<String, u32> {
+    pub fn running(&self) -> HashMap<String, Service> {
         self.list.clone()
     }
 
@@ -49,14 +56,14 @@ impl RunningService {
 
     pub fn close(&self, service: &String) -> bool {
         match self.list.get(service) {
-            Some(pid) => self.close_by_pid(pid.to_string().as_str()),
+            Some(ser) => self.close_by_pid(ser.pid.to_string().as_str()),
             None => false,
         }
     }
 
     pub fn close_all(&self) {
-        for (_, pid) in self.list.clone().into_iter() {
-            self.close_by_pid(pid.to_string().as_str());
+        for (_, ser) in self.list.clone().into_iter() {
+            self.close_by_pid(ser.pid.to_string().as_str());
         }
     }
 }

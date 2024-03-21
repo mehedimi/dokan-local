@@ -77,7 +77,7 @@
               <fwb-button
                 size="xs"
                 @click.stop="gitPull(service)"
-                color="purple"
+                color="alternative"
                 class="ml-3"
                 :disabled="pulls.includes(service)"
                 >{{

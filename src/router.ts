@@ -13,5 +13,10 @@ export const router = createRouter({
       component: () => import("./pages/Env.vue"),
       name: "env.index",
     },
+    {
+      path: "/nginx",
+      component: () => import("./pages/Nginx.vue"),
+      name: "nginx.index",
+    },
   ],
 });

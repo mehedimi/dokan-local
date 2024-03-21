@@ -214,6 +214,7 @@ const backendEnv = computed(() => {
   ]
     .concat(postgresEnv.value)
     .concat(mongoEnv.value)
+    .concat(["\n"])
     .concat(dashboardEnv.map((item) => item.replace("VITE_", "") + "/api"))
     .concat([
       "\n# Redis",
@@ -249,7 +250,7 @@ const postgresEnv = computed(() => {
     key = key.replace("-service", "").toUpperCase();
 
     return [
-      `\n#${key}`,
+      `\n# ${key}`,
       `${key}_DB_HOST=${state.pg.host}`,
       `${key}_DB_PORT=${state.pg.port}`,
       `${key}_DB_USER=${state.pg.user}`,
@@ -268,12 +269,12 @@ const mongoEnv = computed(() => {
 
     return [
       `\n# ${key}`,
-      `${key}_NOSQL_DB_HOST=${state.pg.host}`,
-      `${key}_NOSQL_DB_PORT=${state.pg.port}`,
-      `${key}_NOSQL_DB_USER=${state.pg.user}`,
+      `${key}_NOSQL_DB_HOST=${state.mongo.host}`,
+      `${key}_NOSQL_DB_PORT=${state.mongo.port}`,
+      `${key}_NOSQL_DB_USER=${state.mongo.user}`,
       `${key}_NOSQL_DB_NAME=${key.toLowerCase()}`,
-      `${key}_NOSQL_DB_PASS=${state.pg.pass}`,
-      `${key}_NOSQL_DB_OPTION=${state.pg.option}`,
+      `${key}_NOSQL_DB_PASS=${state.mongo.pass}`,
+      `${key}_NOSQL_DB_OPTION=${state.mongo.db_option || ""}`,
     ];
   });
 });

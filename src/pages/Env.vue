@@ -142,8 +142,11 @@
       </div>
 
       <pre class="overflow-x-auto bg-gray-100 p-5"
-        >{{ "#Dashboard ENV\n\n" }}{{ dashboardEnv.join("\n")
-        }}{{ "\n\n# Storefront ENV\n\n" }}{{ storeFrontEnv.join("\n") }}
+        >{{ "#Dashboard ENV\n\n" }}{{ "MARKETPLACE_ID=\n"
+        }}{{ "VITE_STORAGE_URL=http://localhost:3010\n"
+        }}{{ dashboardEnv.join("\n") }}
+        {{ "\n\n# Storefront ENV\n\n" }}{{ "MARKETPLACE_ID=\n"
+        }}{{ storeFrontEnv.join("\n") }}
       </pre>
     </div>
     <div>
@@ -211,6 +214,12 @@ const backendEnv = computed(() => {
     "MARKETPLACE_ID=",
     "APP_DEBUG=true",
     "JWT_SECRET=THIS_SECRET",
+    "STORAGE_URL=http://localhost:3010",
+    "DOKAN_APP_ENDPOINT=127.0.0.1:8000",
+    "GOOGLE_MAP_API_KEY=",
+    "GOOGLE_CLIENT_ID=",
+    "GOOGLE_CLIENT_SECRET=",
+    "GOOGLE_REDIRECT=",
   ]
     .concat(postgresEnv.value)
     .concat(mongoEnv.value)

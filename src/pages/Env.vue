@@ -230,27 +230,33 @@ const { copy: copyBackendEnv, copied: copiedBackendEnv } = useClipboard();
 const { copy: copyDashboardEnv, copied: copiedDashboardEnv } = useClipboard();
 const { copy: copyStoreFrontEnv, copied: copiedStoreFrontEnv } = useClipboard();
 
-let port = 3002;
 const state = useConfigState();
 
-const dashboardEnv = Object.values(Service)
-  .filter((name) => name.endsWith("-service"))
-  .map(
-    (name) =>
-      `VITE_${name
+let port = 3002;
+const dashboardEnv = computed(() => {
+  return Object.values(Service)
+    .filter((name) => name.endsWith("-service"))
+    .map((name, i) => {
+      return `VITE_${name
         .replace("-service", "")
-        .toUpperCase()}_ENDPOINT=http://localhost:${port++}`,
-  )
-  .concat(["VITE_STORAGE_URL=http://localhost:3010", "MARKETPLACE_ID="]);
+        .toUpperCase()}_ENDPOINT=http://localhost:${port + i}`;
+    })
+    .concat([
+      "VITE_STORAGE_URL=http://localhost:3010",
+      `MARKETPLACE_ID=${state.others.marketplaceId}`,
+    ]);
+});
 
 const storeFrontEnv = computed(() => {
-  return dashboardEnv.map((item) => item.replace("VITE_", "NEXT_PUBLIC_"));
+  return dashboardEnv.value.map((item) =>
+    item.replace("VITE_", "NEXT_PUBLIC_"),
+  );
 });
 
 const backendEnv = computed(() => {
   return [
     "NODE_ENV=development",
-    "MARKETPLACE_ID=",
+    `MARKETPLACE_ID=${state.others.marketplaceId}`,
     "APP_DEBUG=true",
     "JWT_SECRET=THIS_SECRET",
     "STORAGE_URL=http://localhost:3010",
@@ -263,7 +269,9 @@ const backendEnv = computed(() => {
     .concat(postgresEnv.value)
     .concat(mongoEnv.value)
     .concat(["\n"])
-    .concat(dashboardEnv.map((item) => item.replace("VITE_", "") + "/api"))
+    .concat(
+      dashboardEnv.value.map((item) => item.replace("VITE_", "") + "/api"),
+    )
     .concat([
       "\n# Redis",
       `REDIS_HOST=${state.redis.host}`,

@@ -31,6 +31,9 @@ export const useConfigState = defineStore("config", {
         user: "",
         pass: "",
       },
+      others: {
+        marketplaceId: "",
+      },
     };
   },
   actions: {

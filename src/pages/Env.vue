@@ -40,7 +40,7 @@
                 v-model="state.pg.option"
               />
             </fieldset>
-            <fieldset>
+            <fieldset class="mb-5">
               <legend class="mb-3">Redis</legend>
               <fwb-input
                 label="Host"
@@ -65,6 +65,17 @@
                 class="mb-1"
                 size="sm"
                 v-model="state.redis.pass"
+              />
+            </fieldset>
+
+            <!-- Others -->
+            <fieldset class="mb-5">
+              <legend class="mb-3">Others</legend>
+              <fwb-input
+                label="Marketplace ID"
+                class="mb-1"
+                size="sm"
+                v-model="state.others.marketplaceId"
               />
             </fieldset>
           </div>
@@ -137,16 +148,38 @@
   </fwb-accordion>
   <div class="grid md:grid-cols-2 gap-x-10 my-10">
     <div>
-      <div class="flex justify-between my-2">
+      <div class="flex justify-between">
         <h3 class="mb-5 text-lg align-middle">FRONTEND ENV</h3>
       </div>
 
-      <pre class="overflow-x-auto bg-gray-100 p-5"
-        >{{ "#Dashboard ENV\n\n" }}{{ "MARKETPLACE_ID=\n"
-        }}{{ "VITE_STORAGE_URL=http://localhost:3010\n"
-        }}{{ dashboardEnv.join("\n") }}
-        {{ "\n\n# Storefront ENV\n\n" }}{{ "MARKETPLACE_ID=\n"
-        }}{{ storeFrontEnv.join("\n") }}
+      <!-- Dashboard ENV -->
+      <div class="flex justify-between items-center mb-3">
+        <h4 class="text-base">Dashboard ENV</h4>
+        <fwb-button
+          @click="copyDashboardEnv(dashboardEnvRef?.textContent ?? '')"
+          size="xs"
+          color="light"
+          :disabled="copiedDashboardEnv"
+          >{{ copiedDashboardEnv ? "Copied" : "Copy" }}</fwb-button
+        >
+      </div>
+      <pre ref="dashboardEnvRef" class="overflow-x-auto bg-gray-100 p-5 mb-5"
+        >{{ dashboardEnv.join("\n") }}
+      </pre>
+
+      <!-- Storefront ENV -->
+      <div class="flex justify-between items-center mb-3">
+        <h4 class="text-base">Storefront ENV</h4>
+        <fwb-button
+          @click="copyStoreFrontEnv(storeFrontEnvRef?.textContent ?? '')"
+          size="xs"
+          color="light"
+          :disabled="copiedStoreFrontEnv"
+          >{{ copiedStoreFrontEnv ? "Copied" : "Copy" }}</fwb-button
+        >
+      </div>
+      <pre ref="storeFrontEnvRef" class="overflow-x-auto bg-gray-100 p-5"
+        >{{ storeFrontEnv.join("\n") }}
       </pre>
     </div>
     <div>
@@ -154,11 +187,11 @@
         <h3 class="mb-5 text-lg">BACKEND ENV</h3>
         <div>
           <fwb-button
-            @click="copy(backendEnv.join('\n'))"
+            @click="copyBackendEnv(backendEnv.join('\n'))"
             size="xs"
             color="light"
-            :disabled="copied"
-            >{{ copied ? "Copied" : "Copy" }}</fwb-button
+            :disabled="copiedBackendEnv"
+            >{{ copiedBackendEnv ? "Copied" : "Copy" }}</fwb-button
           >
           <fwb-button size="xs" class="ml-2" @click="saveEnv" color="default"
             >Save</fwb-button
@@ -174,7 +207,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import {
   FwbAccordion,
   FwbAccordionContent,
@@ -190,7 +223,12 @@ import { message } from "@tauri-apps/api/dialog";
 import { useAppStore } from "../stores/app.ts";
 import { writeTextFile } from "@tauri-apps/api/fs";
 
-const { copy, copied } = useClipboard();
+const dashboardEnvRef = ref<HTMLPreElement>();
+const storeFrontEnvRef = ref<HTMLPreElement>();
+
+const { copy: copyBackendEnv, copied: copiedBackendEnv } = useClipboard();
+const { copy: copyDashboardEnv, copied: copiedDashboardEnv } = useClipboard();
+const { copy: copyStoreFrontEnv, copied: copiedStoreFrontEnv } = useClipboard();
 
 let port = 3002;
 const state = useConfigState();
@@ -202,7 +240,8 @@ const dashboardEnv = Object.values(Service)
       `VITE_${name
         .replace("-service", "")
         .toUpperCase()}_ENDPOINT=http://localhost:${port++}`,
-  );
+  )
+  .concat(["VITE_STORAGE_URL=http://localhost:3010", "MARKETPLACE_ID="]);
 
 const storeFrontEnv = computed(() => {
   return dashboardEnv.map((item) => item.replace("VITE_", "NEXT_PUBLIC_"));

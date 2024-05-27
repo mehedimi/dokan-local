@@ -1,5 +1,5 @@
 <template>
-  <h2 class="text-2xl text-center">ENV</h2>
+  <h2 class="text-2xl text-center mb-2">ENV</h2>
   <fwb-accordion :open-first-item="false">
     <fwb-accordion-panel>
       <fwb-accordion-header>Config</fwb-accordion-header>
@@ -143,6 +143,13 @@
             </fieldset>
           </div>
         </div>
+        <fwb-button
+          size="lg"
+          class="mt-4 w-full"
+          @click="saveEnv"
+          color="default"
+          >Save</fwb-button
+        >
       </fwb-accordion-content>
     </fwb-accordion-panel>
   </fwb-accordion>
@@ -192,9 +199,6 @@
             color="light"
             :disabled="copiedBackendEnv"
             >{{ copiedBackendEnv ? "Copied" : "Copy" }}</fwb-button
-          >
-          <fwb-button size="xs" class="ml-2" @click="saveEnv" color="default"
-            >Save</fwb-button
           >
         </div>
       </div>

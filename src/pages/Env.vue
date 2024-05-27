@@ -236,17 +236,21 @@ const { copy: copyStoreFrontEnv, copied: copiedStoreFrontEnv } = useClipboard();
 
 const state = useConfigState();
 
-let port = 3002;
+const port = 3002;
+let contentPort: number;
 const dashboardEnv = computed(() => {
   return Object.values(Service)
     .filter((name) => name.endsWith("-service"))
     .map((name, i) => {
+      if (name === Service.CONTENT) {
+        contentPort = port + i;
+      }
       return `VITE_${name
         .replace("-service", "")
         .toUpperCase()}_ENDPOINT=http://localhost:${port + i}`;
     })
     .concat([
-      "VITE_STORAGE_URL=http://localhost:3010",
+      `VITE_STORAGE_URL=http://localhost:${contentPort}`,
       `MARKETPLACE_ID=${state.others.marketplaceId}`,
     ]);
 });
@@ -263,7 +267,7 @@ const backendEnv = computed(() => {
     `MARKETPLACE_ID=${state.others.marketplaceId}`,
     "APP_DEBUG=true",
     "JWT_SECRET=THIS_SECRET",
-    "STORAGE_URL=http://localhost:3010",
+    `STORAGE_URL=http://localhost:${contentPort}`,
     "DOKAN_APP_ENDPOINT=127.0.0.1:8000",
     "GOOGLE_MAP_API_KEY=",
     "GOOGLE_CLIENT_ID=",

@@ -268,11 +268,12 @@ const backendEnv = computed(() => {
     "APP_DEBUG=true",
     "JWT_SECRET=THIS_SECRET",
     `STORAGE_URL=http://localhost:${contentPort}`,
-    "DOKAN_APP_ENDPOINT=127.0.0.1:8000",
-    "GOOGLE_MAP_API_KEY=",
-    "GOOGLE_CLIENT_ID=",
-    "GOOGLE_CLIENT_SECRET=",
+    "DOKAN_APP_ENDPOINT=127.0.0.1:8000/api",
+    "GOOGLE_MAP_API_KEY=test123",
+    "GOOGLE_CLIENT_ID=test123",
+    "GOOGLE_CLIENT_SECRET=test123",
     "GOOGLE_REDIRECT=",
+    "WEBHOOK_APP_URL=",
   ]
     .concat(postgresEnv.value)
     .concat(mongoEnv.value)
@@ -294,6 +295,10 @@ const backendEnv = computed(() => {
       `\n# Storage`,
       `STORAGE_DRIVER=file`,
       `FILE_STORAGE_PATH=storage/uploads`,
+      "\n",
+      `SHIPPO_API_KEY=test123`,
+      "SHIPPO_CLIENT_ID=test123",
+      "SHIPPO_CLIENT_SECRET=test123",
     ]);
 });
 

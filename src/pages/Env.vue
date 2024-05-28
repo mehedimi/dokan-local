@@ -75,7 +75,7 @@
                 label="Marketplace ID"
                 class="mb-1"
                 size="sm"
-                v-model="state.others.marketplaceId"
+                v-model="state.marketplaceId"
               />
             </fieldset>
           </div>
@@ -251,7 +251,7 @@ const dashboardEnv = computed(() => {
     })
     .concat([
       `VITE_STORAGE_URL=http://localhost:${contentPort}`,
-      `MARKETPLACE_ID=${state.others.marketplaceId}`,
+      `MARKETPLACE_ID=${state.marketplaceId}`,
     ]);
 });
 
@@ -264,7 +264,7 @@ const storeFrontEnv = computed(() => {
 const backendEnv = computed(() => {
   return [
     "NODE_ENV=development",
-    `MARKETPLACE_ID=${state.others.marketplaceId}`,
+    `MARKETPLACE_ID=${state.marketplaceId}`,
     "APP_DEBUG=true",
     "JWT_SECRET=THIS_SECRET",
     `STORAGE_URL=http://localhost:${contentPort}`,
@@ -353,7 +353,17 @@ const appStore = useAppStore();
 async function saveEnv() {
   await writeTextFile(
     `${appStore.rootDir}/main.env`,
-    backendEnv.value.join("\n"),
+    `${backendEnv.value.join("\n")}
+
+# Storefront
+${storeFrontEnv.value
+  .filter((item) => !item.startsWith("MARKETPLACE_ID"))
+  .join("\n")}
+
+# Dashboard
+${dashboardEnv.value
+  .filter((item) => !item.startsWith("MARKETPLACE_ID"))
+  .join("\n")}`,
   );
   return message("Env file saved", { type: "info", title: "Info" });
 }

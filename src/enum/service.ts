@@ -13,7 +13,8 @@ export enum Service {
   INTEGRATION = "integration-service",
   REPORT = "report-service",
   COUPON = "coupon-service",
-  SHIPPING = "shipping-service",
+  SSHIPPING = "shipping-service",
+  ACTIVITY = "activity-service"
 }
 
 let initPort = 3000;

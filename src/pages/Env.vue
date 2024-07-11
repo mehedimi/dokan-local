@@ -1,5 +1,5 @@
 <template>
-  <h2 class="text-2xl text-center">ENV</h2>
+  <h2 class="text-2xl text-center mb-2">ENV</h2>
   <fwb-accordion :open-first-item="false">
     <fwb-accordion-panel>
       <fwb-accordion-header>Config</fwb-accordion-header>
@@ -40,7 +40,7 @@
                 v-model="state.pg.option"
               />
             </fieldset>
-            <fieldset>
+            <fieldset class="mb-5">
               <legend class="mb-3">Redis</legend>
               <fwb-input
                 label="Host"
@@ -65,6 +65,17 @@
                 class="mb-1"
                 size="sm"
                 v-model="state.redis.pass"
+              />
+            </fieldset>
+
+            <!-- Others -->
+            <fieldset class="mb-5">
+              <legend class="mb-3">Others</legend>
+              <fwb-input
+                label="Marketplace ID"
+                class="mb-1"
+                size="sm"
+                v-model="state.marketplaceId"
               />
             </fieldset>
           </div>
@@ -132,18 +143,50 @@
             </fieldset>
           </div>
         </div>
+        <fwb-button
+          size="lg"
+          class="mt-4 w-full"
+          @click="saveEnv"
+          color="default"
+          >Save</fwb-button
+        >
       </fwb-accordion-content>
     </fwb-accordion-panel>
   </fwb-accordion>
   <div class="grid md:grid-cols-2 gap-x-10 my-10">
     <div>
-      <div class="flex justify-between my-2">
+      <div class="flex justify-between">
         <h3 class="mb-5 text-lg align-middle">FRONTEND ENV</h3>
       </div>
 
-      <pre class="overflow-x-auto bg-gray-100 p-5"
-        >{{ "#Dashboard ENV\n\n" }}{{ dashboardEnv.join("\n")
-        }}{{ "\n\n# Storefront ENV\n\n" }}{{ storeFrontEnv.join("\n") }}
+      <!-- Dashboard ENV -->
+      <div class="flex justify-between items-center mb-3">
+        <h4 class="text-base">Dashboard ENV</h4>
+        <fwb-button
+          @click="copyDashboardEnv(dashboardEnvRef?.textContent ?? '')"
+          size="xs"
+          color="light"
+          :disabled="copiedDashboardEnv"
+          >{{ copiedDashboardEnv ? "Copied" : "Copy" }}</fwb-button
+        >
+      </div>
+      <pre ref="dashboardEnvRef" class="overflow-x-auto bg-gray-100 p-5 mb-5"
+        >{{ dashboardEnv.join("\n") }}
+      </pre>
+
+      <!-- Storefront ENV -->
+      <div class="flex justify-between items-center mb-3">
+        <h4 class="text-base">Storefront ENV</h4>
+        <fwb-button
+          @click="copyStoreFrontEnv(storeFrontEnvRef?.textContent ?? '')"
+          size="xs"
+          color="light"
+          :disabled="copiedStoreFrontEnv"
+          >{{ copiedStoreFrontEnv ? "Copied" : "Copy" }}</fwb-button
+        >
+      </div>
+      <pre ref="storeFrontEnvRef" class="overflow-x-auto bg-gray-100 p-5"
+        >{{ storeFrontEnv.join("\n") }}
       </pre>
     </div>
     <div>
@@ -151,14 +194,11 @@
         <h3 class="mb-5 text-lg">BACKEND ENV</h3>
         <div>
           <fwb-button
-            @click="copy(backendEnv.join('\n'))"
+            @click="copyBackendEnv(backendEnv.join('\n'))"
             size="xs"
             color="light"
-            :disabled="copied"
-            >{{ copied ? "Copied" : "Copy" }}</fwb-button
-          >
-          <fwb-button size="xs" class="ml-2" @click="saveEnv" color="default"
-            >Save</fwb-button
+            :disabled="copiedBackendEnv"
+            >{{ copiedBackendEnv ? "Copied" : "Copy" }}</fwb-button
           >
         </div>
       </div>
@@ -171,7 +211,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import {
   FwbAccordion,
   FwbAccordionContent,
@@ -187,35 +227,60 @@ import { message } from "@tauri-apps/api/dialog";
 import { useAppStore } from "../stores/app.ts";
 import { writeTextFile } from "@tauri-apps/api/fs";
 
-const { copy, copied } = useClipboard();
+const dashboardEnvRef = ref<HTMLPreElement>();
+const storeFrontEnvRef = ref<HTMLPreElement>();
 
-let port = 3002;
+const { copy: copyBackendEnv, copied: copiedBackendEnv } = useClipboard();
+const { copy: copyDashboardEnv, copied: copiedDashboardEnv } = useClipboard();
+const { copy: copyStoreFrontEnv, copied: copiedStoreFrontEnv } = useClipboard();
+
 const state = useConfigState();
 
-const dashboardEnv = Object.values(Service)
-  .filter((name) => name.endsWith("-service"))
-  .map(
-    (name) =>
-      `VITE_${name
+const port = 3002;
+let contentPort: number;
+const dashboardEnv = computed(() => {
+  return Object.values(Service)
+    .filter((name) => name.endsWith("-service"))
+    .map((name, i) => {
+      if (name === Service.CONTENT) {
+        contentPort = port + i;
+      }
+      return `VITE_${name
         .replace("-service", "")
-        .toUpperCase()}_ENDPOINT=http://localhost:${port++}`,
-  );
+        .toUpperCase()}_ENDPOINT=http://localhost:${port + i}`;
+    })
+    .concat([
+      `VITE_STORAGE_URL=http://localhost:${contentPort}`,
+      `MARKETPLACE_ID=${state.marketplaceId}`,
+    ]);
+});
 
 const storeFrontEnv = computed(() => {
-  return dashboardEnv.map((item) => item.replace("VITE_", "NEXT_PUBLIC_"));
+  return dashboardEnv.value.map((item) =>
+    item.replace("VITE_", "NEXT_PUBLIC_"),
+  );
 });
 
 const backendEnv = computed(() => {
   return [
     "NODE_ENV=development",
-    "MARKETPLACE_ID=",
+    `MARKETPLACE_ID=${state.marketplaceId}`,
     "APP_DEBUG=true",
     "JWT_SECRET=THIS_SECRET",
+    `STORAGE_URL=http://localhost:${contentPort}`,
+    "DOKAN_APP_ENDPOINT=127.0.0.1:8000/api",
+    "GOOGLE_MAP_API_KEY=test123",
+    "GOOGLE_CLIENT_ID=test123",
+    "GOOGLE_CLIENT_SECRET=test123",
+    "GOOGLE_REDIRECT=",
+    "WEBHOOK_APP_URL=",
   ]
     .concat(postgresEnv.value)
     .concat(mongoEnv.value)
     .concat(["\n"])
-    .concat(dashboardEnv.map((item) => item.replace("VITE_", "") + "/api"))
+    .concat(
+      dashboardEnv.value.map((item) => item.replace("VITE_", "") + "/api"),
+    )
     .concat([
       "\n# Redis",
       `REDIS_HOST=${state.redis.host}`,
@@ -230,6 +295,10 @@ const backendEnv = computed(() => {
       `\n# Storage`,
       `STORAGE_DRIVER=file`,
       `FILE_STORAGE_PATH=storage/uploads`,
+      "\n",
+      `SHIPPO_API_KEY=test123`,
+      "SHIPPO_CLIENT_ID=test123",
+      "SHIPPO_CLIENT_SECRET=test123",
     ]);
 });
 
@@ -284,7 +353,17 @@ const appStore = useAppStore();
 async function saveEnv() {
   await writeTextFile(
     `${appStore.rootDir}/main.env`,
-    backendEnv.value.join("\n"),
+    `${backendEnv.value.join("\n")}
+
+# Storefront
+${storeFrontEnv.value
+  .filter((item) => !item.startsWith("MARKETPLACE_ID"))
+  .join("\n")}
+
+# Dashboard
+${dashboardEnv.value
+  .filter((item) => !item.startsWith("MARKETPLACE_ID"))
+  .join("\n")}`,
   );
   return message("Env file saved", { type: "info", title: "Info" });
 }

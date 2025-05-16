@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { nextTick, onMounted, ref } from "vue";
 import { Terminal } from "xterm";
 import { AppEvent, Service } from "../enum/service.ts";
 import { FitAddon } from "xterm-addon-fit";
@@ -19,7 +19,7 @@ onMounted(() => {
       cursor: "#1e293b",
       selectionBackground: "#ddd",
     },
-    cols: 150,
+    cols: 100,
   });
 
   const fitAddon = new FitAddon();
@@ -27,7 +27,9 @@ onMounted(() => {
   terminal.loadAddon(fitAddon);
   terminal.open(el.value as HTMLDivElement);
 
-  fitAddon.fit();
+  nextTick(() => {
+    fitAddon.fit();
+  });
 
   window.addEventListener(
     "resize",
@@ -41,6 +43,7 @@ onMounted(() => {
 
     if (service === props.service) {
       terminal.writeln(log);
+      fitAddon.fit();
     }
   });
 });

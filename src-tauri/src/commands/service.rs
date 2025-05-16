@@ -41,17 +41,19 @@ pub fn start_service(
     // npx ts-node-dev --respawn --transpile-only --exit-child -r tsconfig-paths/register src/index.ts
 
     if state.running_service.lock().unwrap().is_running(&service) {
-        return Err(format!("{} is already been running", &service));
+        return Err(format!("{} is already running", &service));
     }
 
-    let program = if &service == "shipping-service" {
-        if is_dev {
-            "air"
-        } else {
-            "./tmp/api"
-        }
-    } else {
-        "pnpm"
+    let program  = match &service.as_str() {
+        &"shipping-service" => {
+            if is_dev {
+                "air"
+            } else {
+                "./tmp/api"
+            }
+        },
+        &"dokan-cloud" => "php",
+        _ => "pnpm"
     };
 
     let cmd = match is_dev {
@@ -63,9 +65,10 @@ pub fn start_service(
         let mut child = Command::new(program);
 
         let child = match service.as_str() {
-            "storefront" => child.args(["run", &cmd, "-p", "3001"]),
+            "storefront" => child.args(["run", &cmd, "-p", "3001", "--turbo"]),
             "dashboard" => child.args(["run", &cmd, "--port", "3000"]),
             "shipping-service" => child.env("APP_PORT", port.to_string()),
+            "dokan-cloud" => child.args(["artisan", "octane:start", "--watch", "--workers", "1"]),
             _ => child.args(["run", &cmd]).env("APP_PORT", port.to_string()),
         }
         .current_dir(format!("{}/{}", &root_dir, &service))
@@ -129,7 +132,7 @@ pub fn start_service(
             None => {}
         }
 
-        child.wait().expect("Failed to running the service");
+        child.wait().expect("Failed to run the service");
     });
 
     Ok(1)

@@ -11,7 +11,7 @@
       </template>
     </fwb-input>
 
-    <fwb-accordion open-first-item always-open class="mt-6">
+    <fwb-accordion class="mt-6">
       <fwb-accordion-panel v-for="service in Object.values(Service)">
         <fwb-accordion-header class="[&>button]:py-3">
           <div class="flex items-center">

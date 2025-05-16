@@ -305,7 +305,6 @@ const backendEnv = computed(() => {
 const postgresServices = [
   Service.ORDER,
   Service.AUTH,
-  Service.TAX,
   Service.COUPON,
   Service.INTEGRATION,
   Service.PAYMENT,
@@ -330,7 +329,7 @@ const postgresEnv = computed(() => {
   });
 });
 
-const mongodbServices = [Service.CART, Service.CATALOG, Service.CONTENT];
+const mongodbServices = [Service.CONTENT];
 
 const mongoEnv = computed(() => {
   return mongodbServices.flatMap((key: string) => {

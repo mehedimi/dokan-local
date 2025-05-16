@@ -16,7 +16,7 @@ getRootDir()
 </script>
 
 <template>
-  <div class="container mx-auto">
+  <div class="px-2">
     <fwb-navbar class="my-4">
       <template #logo>
         <h2 class="text-3xl">Dokan Local</h2>

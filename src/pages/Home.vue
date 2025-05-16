@@ -14,7 +14,7 @@
     <fwb-accordion class="mt-6">
       <fwb-accordion-panel v-for="service in Object.values(Service)">
         <fwb-accordion-header class="[&>button]:py-3">
-          <div class="flex items-center">
+          <div class="flex items-center justify-between w-full">
             <div>
               {{ service }}:{{ ports[service] }}
               <template v-if="!runningServices.hasOwnProperty(service)">
@@ -88,7 +88,7 @@
 
             <button
               @click.stop="linkOpen(`https://github.com/getdokan/${service}`)"
-              class="inline-block w-6 ml-auto mr-2"
+              class="w-6 mr-2 "
             >
               <github-icon />
             </button>
